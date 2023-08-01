@@ -10,7 +10,7 @@ public class UtilApi {
 
      public Map<String, List<String>> getRequestParameters(final URI requestUri, Charset charset){
        
-        final Map<String, List<String>> requestParameters = new LinkedHashMap<>();
+        final Map<String, List<String>> requestParametersMap = new LinkedHashMap<>();
         final String requestQuery = requestUri.getRawQuery();
 
         if (requestQuery != null) {
@@ -20,13 +20,13 @@ public class UtilApi {
             for (final String rawRequestParameter : rawRequestParameters) {
                 final String[] requestParameter = rawRequestParameter.split("=", 2);
                 final String requestParameterName = decodeUrlComponent(requestParameter[0],charset);
-                requestParameters.putIfAbsent(requestParameterName, new ArrayList<>());
+                requestParametersMap.putIfAbsent(requestParameterName, new ArrayList<>());
                 final String requestParameterValue = requestParameter.length > 1 ? decodeUrlComponent(requestParameter[1],charset) : null;
-                requestParameters.get(requestParameterName).add(requestParameterValue);
+                requestParametersMap.get(requestParameterName).add(requestParameterValue);
             }
         }
 
-        return requestParameters; 
+        return requestParametersMap; 
      }
 
 

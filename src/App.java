@@ -6,7 +6,11 @@ import java.util.Map;
 
 import com.sun.net.httpserver.HttpServer;
 
+import Api.Constants;
+import Api.StatusCode;
 import Api.UtilApi;
+import User.Person;
+import User.PersonManager;
 
 import com.sun.net.httpserver.Headers;
 
@@ -14,60 +18,63 @@ public class App {
 
     //Server Especifications 
     private static final String hostName = "localhost";
-    private static final int port = 8000;
+    private static final int port = 8000;   
     private static final int backlog = 1;
-
-    //Requisitions Headers
-    private static final String headerAllow = "Allow";
-    private static final String headerExpect = "Expect";
-    private static final String headerContentType = "Content-Type";
-
-    private static final Charset charset = StandardCharsets.UTF_8;
-
-    //Status Codes
-    private static final int statusOk = 200;
-    private static final int statusMethodNotAllowed = 405;
-
-    private static final int noResponseLenght = -1;
 
     //Http Methods
     private static final String methodGet = "GET";
+    private static final String methodPost = "POST";
+    private static final String methodPut = "PUT";
+    private static final String methodDelete = "DELETE";
     private static final String methodOptions = "OPTIONS";
-    private static final String allowedMethods = methodGet + "," + methodOptions;
+    //Allowed Http Methods by Domain
+    private static final String allowedMethodsJson = methodGet + "," + methodOptions;
+     private static final String allowedMethodPerson = methodGet + "," + methodPost + "," + methodPut+ "," +methodDelete;
 
     //Utility classes
     private static final UtilApi util = new UtilApi();
+    private static final Constants constants = new Constants();
+    private static PersonManager personManager = new PersonManager();
 
     public static void main(String[] args ) throws Exception{
         final HttpServer server =  HttpServer.create(new InetSocketAddress(hostName, port), backlog);
 
-        server.createContext("/api/param", ex ->{
+        server.createContext("/api/person", ex ->{
             try{
                 final Headers headers = ex.getResponseHeaders();
                 final String requestMethod = ex.getRequestMethod().toUpperCase();
                 
-                if(requestMethod.equals("GET")){
+                if(requestMethod.equals("POST")){
                     //Getting all query items
-                    Map<String,List<String>> queryParam = util.getRequestParameters(ex.getRequestURI(), charset); 
-                    
+                    Map<String,List<String>> queryParam = util.getRequestParameters(ex.getRequestURI(), constants.charset);
                     List<String> tempStringList = queryParam.get("name");
-
-                    if(tempStringList != null){
-                        for(String s : tempStringList){
-                            if(s == null || s.equals("")){
-                                headers.set(headerExpect,"Invalid Parameter");
-                                ex.sendResponseHeaders(404, noResponseLenght);
-                                break;
-                            }  
-                        }
-                    }else{
-                        headers.set(headerExpect,"Invalid Parameter");
-                        ex.sendResponseHeaders(404, noResponseLenght);
+                    for(String s : tempStringList){
+                        personManager.addPerson(s);
                     }
+                    headers.set(constants.headerAllow, allowedMethodPerson);
+                    ex.sendResponseHeaders(StatusCode.CREATED.getCode(), constants.noResponseLenght);
+                }
+                else if(requestMethod.equals("DELETE")){
+                    Map<String,List<String>> queryParam = util.getRequestParameters(ex.getRequestURI(), constants.charset);
+                    List<String> tempStringList = queryParam.get("name");
+                    boolean isPersonDeleted = personManager.deletePerson(tempStringList.get(0));
+
+                    if(isPersonDeleted == false){
+                        headers.set(requestMethod, requestMethod);
+                        ex.sendResponseHeaders(port, backlog);
+                    }else{
+
+                    }                    
+                
+                }
+                else if(requestMethod.equals("GET")){
 
                 }
 
-            }finally{
+
+            }
+
+            finally{
                 ex.close();
             }
         });
@@ -79,19 +86,19 @@ public class App {
 
                 //Request Methods
                 if(requestMethod.equals("GET")){
-                    final String responseBody = "{\"email\": \"example@com\", \"name\": \"Example\"}";
+                    final String responseBodyJson = "{\"email\": \"example@com\", \"name\": \"Example\"}";
 
-                    headers.set(headerContentType, String.format("application/json; charset=%s", charset));
-                    final byte[] rawResponseBody = responseBody.getBytes(charset);
-                    ex.sendResponseHeaders(statusOk, rawResponseBody.length);
-                    ex.getResponseBody().write(rawResponseBody);
+                    headers.set(constants.headerContentType, String.format("application/json; charset=%s", constants.charset));
+                    final byte[] rawResponseBodyJson = responseBodyJson.getBytes(constants.charset);
+                    ex.sendResponseHeaders(StatusCode.OK.getCode(), rawResponseBodyJson.length);
+                    ex.getResponseBody().write(rawResponseBodyJson);
                 }
                 else if(requestMethod.equals("OPTIONS")){
-                    headers.set(headerAllow, allowedMethods);
-                    ex.sendResponseHeaders(statusOk,noResponseLenght);
+                    headers.set(constants.headerAllow, allowedMethodsJson);
+                    ex.sendResponseHeaders(StatusCode.OK.getCode(), constants.noResponseLenght);
                 }else{
-                    headers.set(headerAllow, allowedMethods);
-                    ex.sendResponseHeaders(statusMethodNotAllowed,noResponseLenght);
+                    headers.set(constants.headerAllow, allowedMethodsJson);
+                    ex.sendResponseHeaders(StatusCode.METHOD_NOT_ALLOWED.getCode(), constants.noResponseLenght);
                 }
 
             }finally{
