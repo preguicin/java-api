@@ -1,4 +1,5 @@
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
 import java.util.Map;
 import com.sun.net.httpserver.HttpServer;
 
@@ -7,6 +8,7 @@ import Api.StatusCode;
 import Api.UtilApi;
 import User.Person;
 import User.PersonManager;
+import User.Pet;
 
 import com.sun.net.httpserver.Headers;
 
@@ -101,13 +103,13 @@ public class App {
                     Person tempPerson = personManager.getPerson(id);
                   
                     if(tempPerson != null){
-                        final String responseBodyJson = String.format("{\"Person\": {\"name\": \"%s\", \"adr\": \"%s\", \"id\": \"%s\", \"Pet\":{ \"name\": \"Pet Name\" }} }", tempPerson.getName() , tempPerson.getAddress(), tempPerson.getId());
+                        final String responseBodyJson = String.format("{\"Person\": {\"name\": \"%s\", \"adr\": \"%s\", id: %s, \"Pet\":{ \"name\": \"Pet Name\" }} }", tempPerson.getName() , tempPerson.getAddress(), tempPerson.getId());
                         final byte[] rawResponseBodyJson = responseBodyJson.getBytes(constants.charset);
                         headers.set(constants.headerContentType, String.format("application/json: charset=%s", constants.charset));
                         ex.sendResponseHeaders(StatusCode.OK.getCode(), rawResponseBodyJson.length);
                         ex.getResponseBody().write(rawResponseBodyJson);
                     }else{
-                        final String responseBodyJson = String.format("{\"Person\": {\"name\": \"Empty name\", \"adr\": \"Empty adr\", \"id\": \"Id Doesn't Exist\", \"Pet\":{ \"name\": \"Empty Pet Name\" } } }");
+                        final String responseBodyJson = String.format("{\"Person\": {\"name\": \"Empty name\", \"adr\": \"Empty adr\", id: -999, \"Pet\":{ \"name\": \"Empty Pet Name\" } } }");
                         final byte[] rawResponseBodyJson = responseBodyJson.getBytes(constants.charset);
                         headers.set(constants.headerContentType, String.format("application/json: charset=%s", constants.charset));
                         ex.sendResponseHeaders(StatusCode.BAD_REQUEST.getCode(), rawResponseBodyJson.length);
@@ -128,7 +130,7 @@ public class App {
                     Person person = personManager.getPerson(id);
 
                     if(id == Integer.MIN_VALUE || person == null){
-                        final String responseBodyJson = String.format("{\"Person\": {\"name\": \"Invalid Id\", \"adr\": \"Invalid Id\", \"id\": \"Id Doesn't Exist\", \"Pet\":{ \"name\": \"Invalid Id\" } } }");
+                        final String responseBodyJson = String.format("{\"Person\": {\"name\": \"Invalid Id\", \"adr\": \"Invalid Id\", id: -999, \"Pet\":{ \"name\": \"Invalid Id\" } } }");
                         final byte[] rawResponseBodyJson = responseBodyJson.getBytes(constants.charset);
                         headers.set(constants.headerContentType, String.format("application/json: charset=%s", constants.charset));
                         ex.sendResponseHeaders(StatusCode.BAD_REQUEST.getCode(), rawResponseBodyJson.length);
@@ -162,16 +164,128 @@ public class App {
             Map<String,String> requestParamMap = util.getRequestParameters(ex.getRequestURI(), constants.charset);
             
             if(requestMethod.equals("GET")){
-                String petName = requestParamMap.get("name");
                 int personId = requestParamMap.get("id") != null ? Integer.parseInt(requestParamMap.get("id")) : Integer.MIN_VALUE;
+
+                ArrayList<Pet> tempPets = personManager.getPets(personId);
                 
+                if(tempPets != null){
+                    String tempJsonString = util.formatPetsString(tempPets);
+                    final byte[] rawResponseBodyJson = tempJsonString.getBytes(constants.charset);
+                    headers.set(constants.headerContentType, String.format("application/json: charset=%s", constants.charset));
+                    ex.sendResponseHeaders(StatusCode.OK.getCode(), rawResponseBodyJson.length);
+                    ex.getResponseBody().write(rawResponseBodyJson);
+
+                }else{
+                    final String responseBodyJson = String.format("{\"Pets\":  {\"Pet\": {id: -999, \"name\": \"Pet Id invalid\"}}");
+                    final byte[] rawResponseBodyJson = responseBodyJson.getBytes(constants.charset);
+                    headers.set(constants.headerContentType, String.format("application/json: charset=%s", constants.charset));
+                    ex.sendResponseHeaders(StatusCode.BAD_REQUEST.getCode(), rawResponseBodyJson.length);
+                    ex.getResponseBody().write(rawResponseBodyJson);
+                }
             }
             else if(requestMethod.equals("POST")){
                 String petName = requestParamMap.get("name");
                 int personId = requestParamMap.get("id") != null ? Integer.parseInt(requestParamMap.get("id")) : Integer.MIN_VALUE;
+                
+                if(petName != null){
 
+                    boolean DoesPersonExist = personManager.addPet(personId, petName);
+                    Person person = personManager.getPerson(personId);
+
+                    if(DoesPersonExist != false && person != null){
+                        final String responseBodyJson = String.format("{\"Pet Added\": \"True\", \"Person\": {\"name\": \"%s\", \"adr\": \"%s\",id: %s, \"Pet\":{ id: %s,\"name\": \"%s\" } } }", person.getName(),person.getAddress(),person.getId(), person.getLatestPet().getId(), person.getLatestPet().getName());
+                        final byte[] rawResponseBodyJson = responseBodyJson.getBytes(constants.charset);
+                        headers.set(constants.headerContentType, String.format("application/json: charset=%s", constants.charset));
+                        ex.sendResponseHeaders(StatusCode.CREATED.getCode(), rawResponseBodyJson.length);
+                        ex.getResponseBody().write(rawResponseBodyJson);
+                    }else{
+                        final String responseBodyJson = String.format("{\"Pet Added\": \"False\" }");
+                        final byte[] rawResponseBodyJson = responseBodyJson.getBytes(constants.charset);
+                        headers.set(constants.headerContentType, String.format("application/json: charset=%s", constants.charset));
+                        ex.sendResponseHeaders(StatusCode.BAD_REQUEST.getCode(), rawResponseBodyJson.length);
+                        ex.getResponseBody().write(rawResponseBodyJson);
+                    }
+                }else{
+                    final String responseBodyJson = String.format("{\"Pet Added\": \"False\" }");
+                    final byte[] rawResponseBodyJson = responseBodyJson.getBytes(constants.charset);
+                    headers.set(constants.headerContentType, String.format("application/json: charset=%s", constants.charset));
+                    ex.sendResponseHeaders(StatusCode.BAD_REQUEST.getCode(), rawResponseBodyJson.length);
+                    ex.getResponseBody().write(rawResponseBodyJson);
+                }
             }
+            else if(requestMethod.equals("DELETE")){
+                
+            int personId = requestParamMap.get("id") != null ? Integer.parseInt(requestParamMap.get("id")) : Integer.MIN_VALUE;
+            int petId = requestParamMap.get("pid") != null ? Integer.parseInt(requestParamMap.get("pid")) : Integer.MIN_VALUE;
+            Person per = personManager.getPerson(personId);
+               
+            if(per != null){
+                boolean result = per.deletePet(petId);
+                   
+                if(result == true){
+                    final String responseBodyJson = String.format("{\"Pet Deleted\": \"True\", \"Person\": {\"name\": \"%s\", \"adr\": \"%s\", \"id\": \"%s\"} }", per.getName(),per.getAddress(),per.getId());
+                  
+                     final byte[] rawResponseBodyJson = responseBodyJson.getBytes(constants.charset);
+                        headers.set(constants.headerContentType, String.format("application/json: charset=%s", constants.charset));
+                        ex.sendResponseHeaders(StatusCode.OK.getCode(), rawResponseBodyJson.length);
+                        ex.getResponseBody().write(rawResponseBodyJson);
+                    }else{
+                        final String responseBodyJson = String.format("{\"Pet Deleted\": \"False\" }");
+                        final byte[] rawResponseBodyJson = responseBodyJson.getBytes(constants.charset);
+                        headers.set(constants.headerContentType, String.format("application/json: charset=%s", constants.charset));
+                        ex.sendResponseHeaders(StatusCode.BAD_REQUEST.getCode(), rawResponseBodyJson.length);
+                        ex.getResponseBody().write(rawResponseBodyJson);
+                    }
+                }else{
+                    final String responseBodyJson = String.format("{\"Pet Deleted\": \"False\" }");
+                    final byte[] rawResponseBodyJson = responseBodyJson.getBytes(constants.charset);
+                    headers.set(constants.headerContentType, String.format("application/json: charset=%s", constants.charset));
+                    ex.sendResponseHeaders(StatusCode.BAD_REQUEST.getCode(), rawResponseBodyJson.length);
+                    ex.getResponseBody().write(rawResponseBodyJson);
+                }
+                
+            }
+            else if(requestMethod.equals("PUT")){
+                int personId = requestParamMap.get("id") != null ? Integer.parseInt(requestParamMap.get("id")) : Integer.MIN_VALUE;
+                int petId = requestParamMap.get("pid") != null ? Integer.parseInt(requestParamMap.get("pid")) : Integer.MIN_VALUE;
+                String petName = requestParamMap.get("name");
 
+                if(petName != null){
+                    Person person = personManager.getPerson(personId);
+                    if(person != null){
+                        Pet pet = person.getPet(petId);
+                        if(pet != null){
+                            pet.setName(petName);
+                            final String responseBodyJson = String.format("{\"Pet Changed\": \"True\", \"Person\": {\"name\": \"%s\", \"adr\": \"%s\",id: %s, \"Pet\":{ id: %s,\"name\": \"%s\" } } }", person.getName(),person.getAddress(),person.getId(), pet.getId(), pet.getName());
+                            final byte[] rawResponseBodyJson = responseBodyJson.getBytes(constants.charset);
+                            headers.set(constants.headerContentType, String.format("application/json: charset=%s", constants.charset));
+                            ex.sendResponseHeaders(StatusCode.OK.getCode(), rawResponseBodyJson.length);
+                            ex.getResponseBody().write(rawResponseBodyJson);
+
+                        }else{
+                            final String responseBodyJson = String.format("{\"Pet Changed\": \"False\", \"Person\": {\"name\": \"%s\", \"adr\": \"%s\",id: %s, \"Pet\":{ id: -999,\"name\": \"Invalid Pet Id\" } } }", person.getName(),person.getAddress(),person.getId());
+                            final byte[] rawResponseBodyJson = responseBodyJson.getBytes(constants.charset);
+                            headers.set(constants.headerContentType, String.format("application/json: charset=%s", constants.charset));
+                            ex.sendResponseHeaders(StatusCode.BAD_REQUEST.getCode(), rawResponseBodyJson.length);
+                            ex.getResponseBody().write(rawResponseBodyJson);
+
+                        }
+                    }else{
+                            final String responseBodyJson = String.format("{\"Pet Changed\": \"False\", \"Person\": {\"name\": \"Invalid Person Id\", \"adr\": \"Invalid Person Id\",id: -999, \"Pet\":{ id: -999,\"name\": \"Invalid Person Id\" } } }");
+                            final byte[] rawResponseBodyJson = responseBodyJson.getBytes(constants.charset);
+                            headers.set(constants.headerContentType, String.format("application/json: charset=%s", constants.charset));
+                            ex.sendResponseHeaders(StatusCode.BAD_REQUEST.getCode(), rawResponseBodyJson.length);
+                            ex.getResponseBody().write(rawResponseBodyJson);
+
+                    }
+                }else{
+                            final String responseBodyJson = String.format("{\"Pet Changed\": \"False\", \"Person\": {\"name\": \"Invalid Pet Name\", \"adr\": \"Invalid Pet Name\",id: -999, \"Pet\":{ id: -999,\"name\": \"Invalid Pet Name\" } } }");
+                            final byte[] rawResponseBodyJson = responseBodyJson.getBytes(constants.charset);
+                            headers.set(constants.headerContentType, String.format("application/json: charset=%s", constants.charset));
+                            ex.sendResponseHeaders(StatusCode.BAD_REQUEST.getCode(), rawResponseBodyJson.length);
+                            ex.getResponseBody().write(rawResponseBodyJson);
+                }
+            }
         });
 
         server.start();

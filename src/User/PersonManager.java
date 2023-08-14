@@ -13,7 +13,7 @@ public class PersonManager {
     }
 
     public Person getPerson(int id){
-        if(id == Integer.MIN_VALUE){
+        if(id == Integer.MIN_VALUE || personArrList.size() == 0){
             return null;
         }
 
@@ -31,7 +31,7 @@ public class PersonManager {
     }
 
     public boolean deletePerson(int id){
-        if(id == Integer.MIN_VALUE){
+        if(id == Integer.MIN_VALUE|| personArrList.size() == 0){
             return false;
         }
 
@@ -50,7 +50,7 @@ public class PersonManager {
     }
 
     public boolean putPerson(int id, String name){
-        if(id == Integer.MIN_VALUE){
+        if(id == Integer.MIN_VALUE || personArrList.size() == 0){
             return false;
         }
 
@@ -71,7 +71,7 @@ public class PersonManager {
     //Pet related methods
 
     public ArrayList<Pet> getPets(int id){
-        if(id == Integer.MIN_VALUE){
+        if(id == Integer.MIN_VALUE || personArrList.size() == 0){
             return null;
         }
 
@@ -86,11 +86,14 @@ public class PersonManager {
     }
 
     public boolean addPet(int id, String petName){
-
+        if(id == Integer.MIN_VALUE || personArrList.size() <= 0){
+            return false;
+        }
+        
         for(int i = 0; i < personArrList.size(); i++){
             Person p = personArrList.get(i);
             if(p.getId() == id){
-                
+                p.setPet(petName);
                 return true;
             }
         }

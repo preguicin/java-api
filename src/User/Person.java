@@ -8,7 +8,7 @@ public class Person {
     private String address;
     private String name;
     //Pet variables
-    private ArrayList<Pet> pets;
+    private ArrayList<Pet> pets = new ArrayList<>();
     private int petIndex = 0;
 
     public Person(String name,String address, int id){
@@ -25,8 +25,29 @@ public class Person {
         return petReturn;
     }
 
+    public boolean deletePet(int petId){
+        if(petId == Integer.MIN_VALUE){
+            return false;
+        }
+         for(int i = 0; i < pets.size(); i++){
+            Pet p = pets.get(i);
+            if(p.getId() == petId){
+                pets.remove(i);
+                return true;
+            }
+        }
+        return false;
+    }
+
     public Pet getPet(int i) {
         return pets.get(i);
+    }
+
+    public Pet getLatestPet() {
+        if(petIndex == 0){
+         return null;
+        }
+        return pets.get(petIndex - 1);
     }
 
     public void setPet(String name) {
