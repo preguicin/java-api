@@ -4,13 +4,15 @@ import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URLDecoder;
 import java.nio.charset.Charset;
-import java.util.*;
+import java.util.LinkedHashMap;
+import java.util.Map;
+
 
 public class UtilApi {
 
-     public Map<String, List<String>> getRequestParameters(final URI requestUri, Charset charset){
+     public Map<String, String> getRequestParameters(final URI requestUri, Charset charset){
        
-        final Map<String, List<String>> requestParametersMap = new LinkedHashMap<>();
+        final Map<String, String> requestParametersMap = new LinkedHashMap<>();
         final String requestQuery = requestUri.getRawQuery();
 
         if (requestQuery != null) {
@@ -20,9 +22,8 @@ public class UtilApi {
             for (final String rawRequestParameter : rawRequestParameters) {
                 final String[] requestParameter = rawRequestParameter.split("=", 2);
                 final String requestParameterName = decodeUrlComponent(requestParameter[0],charset);
-                requestParametersMap.putIfAbsent(requestParameterName, new ArrayList<>());
                 final String requestParameterValue = requestParameter.length > 1 ? decodeUrlComponent(requestParameter[1],charset) : null;
-                requestParametersMap.get(requestParameterName).add(requestParameterValue);
+                requestParametersMap.putIfAbsent(requestParameterName, requestParameterValue);
             }
         }
 

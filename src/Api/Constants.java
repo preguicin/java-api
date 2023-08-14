@@ -12,6 +12,7 @@ public class Constants {
 
     //Charset
     public final Charset charset = StandardCharsets.UTF_8;
+    
     //Response
     public final int noResponseLenght = -1;
 }

@@ -3,40 +3,97 @@ package User;
 import java.util.ArrayList;
 
 public class PersonManager {
-    ArrayList<Person> personArrList = new ArrayList<>();
 
-    public void addPerson(String name){
-        Person p = new Person(name);
+    private static ArrayList<Person> personArrList = new ArrayList<>();
+
+    public void addPerson(String name, String address, int index){
+        Person p = new Person(name, address, index);
         personArrList.add(p);
+        
     }
 
-    public boolean deletePerson(String name){
-        int index = 0;
+    public Person getPerson(int id){
+        if(id == Integer.MIN_VALUE){
+            return null;
+        }
+
+        int i = 0;
 
         do{
-            Person p = personArrList.get(index);
-            if(p.getName().equals(name)){
+            Person p = personArrList.get(i);
+            if(p.getId() == id){
+                return p;
+            }
+            i++;
+        }while(i < personArrList.size());
+
+        return null;
+    }
+
+    public boolean deletePerson(int id){
+        if(id == Integer.MIN_VALUE){
+            return false;
+        }
+
+        int i = 0;
+
+        do{
+            Person p = personArrList.get(i);
+            if(p.getId() == id){
                 personArrList.remove(p);
                 return true;
             }
-            index++;
-        }while(index < personArrList.size());
+            i++;
+        }while(i < personArrList.size());
 
         return false;
     }
 
-    public boolean putPerson(String name){
-        int index = 0;
+    public boolean putPerson(int id, String name){
+        if(id == Integer.MIN_VALUE){
+            return false;
+        }
+
+        int i = 0;
 
         do{
-            Person p = personArrList.get(index);
-            if(p.getName().equals(name)){
+            Person p = personArrList.get(i);
+            if(p.getId() == id){
                 p.setName(name);
                 return true;
             }
-            index++;
-        }while(index < personArrList.size());
+            i++;
+        }while(i < personArrList.size());
 
+        return false;
+    }
+    
+    //Pet related methods
+
+    public ArrayList<Pet> getPets(int id){
+        if(id == Integer.MIN_VALUE){
+            return null;
+        }
+
+        for(int i = 0; i < personArrList.size(); i++){
+            Person p = personArrList.get(i);
+            if(p.getId() == id){
+                return p.getPets();
+            }
+        }
+
+        return null;
+    }
+
+    public boolean addPet(int id, String petName){
+
+        for(int i = 0; i < personArrList.size(); i++){
+            Person p = personArrList.get(i);
+            if(p.getId() == id){
+                
+                return true;
+            }
+        }
         return false;
     }
 
